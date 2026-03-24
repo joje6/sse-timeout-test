@@ -123,18 +123,17 @@
 
       es.onerror = (e) => {
         const elapsed = formatElapsed(Date.now() - startTime);
-        log(`Error/Disconnect at ${elapsed} (readyState: ${es.readyState})`, 'error');
+        const elapsedSec = Math.round((Date.now() - startTime) / 1000);
+        log(`Connection lost at ${elapsed} (${elapsedSec}s) — readyState: ${es.readyState}`, 'error');
 
-        if (es.readyState === EventSource.CLOSED) {
-          setStatus('Disconnected', 'disconnected');
-          log(`Connection closed by server at ${elapsed}`, 'error');
-          stopElapsedTimer();
-          document.getElementById('btnConnect').style.display = '';
-          document.getElementById('btnDisconnect').style.display = 'none';
-        } else if (es.readyState === EventSource.CONNECTING) {
-          setStatus('Reconnecting...', 'disconnected');
-          log('Browser is attempting to reconnect...', 'info');
-        }
+        // 자동 재연결 방지 — 단일 커넥션 테스트를 위해 즉시 close
+        es.close();
+        es = null;
+        setStatus(`Timeout at ${elapsed}`, 'disconnected');
+        log(`SSE timeout detected: ${elapsedSec}s`, 'error');
+        stopElapsedTimer();
+        document.getElementById('btnConnect').style.display = '';
+        document.getElementById('btnDisconnect').style.display = 'none';
       };
     }
 
